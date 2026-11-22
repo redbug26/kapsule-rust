@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Kapsule — lecteur WebAssembly</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="canonical" href="https://kapsule.kyuran.be/" />
+  </head>
+  <body>
+    <header>
+      <div>
+        <p class="eyebrow">LUA 5.4 · RUST · WEBASSEMBLY</p>
+        <h1>Kapsule<span>Le petit monde des applications Lua.</span></h1>
+      </div>
+      <a href="https://github.com/redbug26/kapsule-rust">Code source ↗</a>
+    </header>
+    <main>
+      <section class="toolbar" aria-label="Lancer une Kapsule">
+        <label
+          >Kapsule<select id="demo">
+            <optgroup label="Exemple local">
+              <option value="local:hello">Hello Kapsule</option>
+            </optgroup>
+          </select></label
+        >
+        <button id="launch" disabled>Lancer</button>
+        <button id="refresh-store" disabled>Actualiser le store</button>
+        <button id="cancel-load" hidden>Annuler</button>
+        <label class="file-button"
+          >Ouvrir un dossier<input
+            id="folder"
+            type="file"
+            webkitdirectory
+            multiple
+            disabled
+        /></label>
+        <label class="arguments"
+          >Arguments
+          <input
+            id="args"
+            placeholder='["fichier.txt"]'
+            value="[]"
+            aria-label="Arguments sous forme de tableau JSON"
+        /></label>
+      </section>
+      <div class="store-details">
+        <p id="store-description">
+          Chargez une Kapsule du store KKC ou ouvrez un dossier.
+        </p>
+        <span id="store-source">Chargement du catalogue…</span>
+      </div>
+      <section class="player" aria-label="Lecteur de Kapsules">
+        <div class="chrome">
+          <span class="light"></span><strong id="title">Lecteur Kapsule</strong
+          ><span id="dimensions"></span
+          ><button id="zoom" disabled>F5 · Zoom</button
+          ><button id="stop" disabled>Arrêter</button>
+        </div>
+        <div id="viewport">
+          <canvas
+            id="screen"
+            tabindex="0"
+            aria-label="Écran de la Kapsule. Cliquer pour utiliser le clavier."
+          ></canvas>
+          <div id="welcome">
+            <span>◆</span>
+            <p>Un moteur Rust. Un peu de Lua.<br />À vous de jouer.</p>
+          </div>
+        </div>
+        <p id="status" role="status" aria-live="polite">
+          Chargement du moteur WebAssembly…
+        </p>
+        <details id="error-details" hidden>
+          <summary>Détails techniques</summary>
+          <pre id="error-text"></pre>
+        </details>
+      </section>
+      <div class="under-player">
+        <p>
+          Cliquez dans l’écran pour jouer. <kbd>F5</kbd> zoom ·
+          <kbd>Ctrl C</kbd> arrêter · <kbd>Esc</kbd> touche de l’application
+        </p>
+        <div class="touch" aria-label="Commandes tactiles">
+          <button data-key="left" aria-label="Gauche">←</button
+          ><button data-key="up" aria-label="Haut">↑</button
+          ><button data-key="down" aria-label="Bas">↓</button
+          ><button data-key="right" aria-label="Droite">→</button
+          ><button data-key="enter">Entrée</button
+          ><button data-key="esc">Esc</button>
+        </div>
+      </div>
+      <footer>
+        <p>
+          Importez le dossier contenant <code>apps.toml</code> et ses fichiers
+          Lua. Les fichiers restent dans ce navigateur. Les modifications sont
+          temporaires et perdues à l’ouverture d’une autre Kapsule ou au
+          rechargement. N’exécutez que des Kapsules de confiance.
+        </p>
+        <a href="https://github.com/redbug26/kkc-store">Store KKC ↗</a>
+        <a
+          href="https://github.com/redbug26/kkc-store/blob/main/docs/lua-applications.md"
+          >Créer une Kapsule ↗</a
+        >
+      </footer>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

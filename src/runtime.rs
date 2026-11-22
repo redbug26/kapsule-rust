@@ -1,6 +1,9 @@
 // Adapted from kkc-rust/src/lua_apps.rs; this standalone runtime is now the Kapsule reference.
-use crate::ui::{ShortcutBarItem, render_shortcut_bar};
+use crate::ui::ShortcutBarItem;
+#[cfg(not(target_os = "emscripten"))]
+use crate::ui::render_shortcut_bar;
 use anyhow::{Context, Result, anyhow, bail};
+#[cfg(not(target_os = "emscripten"))]
 use crossterm::{
     event::{
         self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
@@ -9,6 +12,7 @@ use crossterm::{
     terminal::{self},
 };
 use mlua::{Lua, String as LuaString, Table, Value};
+#[cfg(not(target_os = "emscripten"))]
 use ratatui::{
     Terminal,
     backend::CrosstermBackend,
@@ -23,6 +27,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
+#[cfg(not(target_os = "emscripten"))]
 use std::process::{Command, Stdio};
 use std::rc::Rc;
 use std::time::{Duration, Instant};
@@ -156,6 +161,7 @@ impl GraphicsBuffer {
         }
     }
 
+    #[cfg(not(target_os = "emscripten"))]
     fn render_lines(&self) -> Vec<(String, Vec<CellStyle>)> {
         let mut out = Vec::with_capacity(self.height as usize);
         for y in 0..self.height {
@@ -176,6 +182,7 @@ fn load_manifest(path: &Path) -> Result<LuaAppManifest> {
     Ok(manifest)
 }
 
+#[cfg(not(target_os = "emscripten"))]
 fn run_lua_app(
     descriptor: &LuaAppDescriptor,
     script_path: &Path,
@@ -230,60 +237,7 @@ fn run_lua_app(
         crossterm::execute!(io::stdout(), terminal::Clear(terminal::ClearType::All))?;
     }
 
-    let script = fs::read_to_string(script_path)
-        .with_context(|| format!("Reading {}", script_path.display()))?;
-    let value: Value = lua
-        .load(&script)
-        .set_name(script_path.to_string_lossy().as_ref())
-        .eval()
-        .with_context(|| format!("Running {}", script_path.display()))?;
-
-    let app_table = match value {
-        Value::Table(t) => t,
-        _ => lua
-            .globals()
-            .get::<Table>("app")
-            .map_err(|_| anyhow!("Lua app must return a table with callbacks"))?,
-    };
-
-    let init_ctx = lua.create_table()?;
-    init_ctx.set("width", width)?;
-    init_ctx.set("height", height)?;
-    init_ctx.set("id", descriptor.manifest.application.id.clone())?;
-    init_ctx.set(
-        "name",
-        descriptor
-            .manifest
-            .application
-            .name
-            .clone()
-            .unwrap_or_else(|| descriptor.manifest.application.id.clone()),
-    )?;
-    init_ctx.set(
-        "version",
-        descriptor
-            .manifest
-            .application
-            .version
-            .clone()
-            .unwrap_or_else(|| "0.1.0".to_string()),
-    )?;
-    init_ctx.set(
-        "description",
-        descriptor
-            .manifest
-            .application
-            .description
-            .clone()
-            .unwrap_or_default(),
-    )?;
-    let lua_args = lua.create_table()?;
-    for (idx, arg) in args.iter().enumerate() {
-        lua_args.set(idx + 1, arg.clone())?;
-    }
-    init_ctx.set("args", lua_args)?;
-
-    call_table_function_if_exists(&app_table, "init", init_ctx)?;
+    let app_table = load_application(&lua, descriptor, script_path, args, width, height)?;
 
     let fps = descriptor.manifest.runtime.fps.unwrap_or(30).clamp(10, 120);
     let frame_time = Duration::from_secs_f64(1.0 / fps as f64);
@@ -547,6 +501,7 @@ fn run_lua_app(
 }
 
 /// Compute the window area for a Lua app (floating when !zoomed, full-screen when zoomed).
+#[cfg(not(target_os = "emscripten"))]
 fn lua_app_window_area(term: Rect, zoomed: bool, req_width: u16, req_height: u16) -> Rect {
     if zoomed {
         return term; // Full screen
@@ -565,6 +520,7 @@ fn lua_app_window_area(term: Rect, zoomed: bool, req_width: u16, req_height: u16
 }
 
 /// Inner content area (after borders) inside the window.
+#[cfg(not(target_os = "emscripten"))]
 fn lua_app_inner_area(term: Rect, zoomed: bool, req_width: u16, req_height: u16) -> Rect {
     let win = lua_app_window_area(term, zoomed, req_width, req_height);
     Rect {
@@ -573,6 +529,72 @@ fn lua_app_inner_area(term: Rect, zoomed: bool, req_width: u16, req_height: u16)
         width: win.width.saturating_sub(2),
         height: win.height.saturating_sub(2),
     }
+}
+
+fn load_application(
+    lua: &Lua,
+    descriptor: &LuaAppDescriptor,
+    script_path: &Path,
+    args: &[String],
+    width: u16,
+    height: u16,
+) -> Result<Table> {
+    let script = fs::read_to_string(script_path)
+        .with_context(|| format!("Reading {}", script_path.display()))?;
+    let value: Value = lua
+        .load(&script)
+        .set_name(script_path.to_string_lossy().as_ref())
+        .eval()
+        .with_context(|| format!("Running {}", script_path.display()))?;
+
+    let app_table = match value {
+        Value::Table(t) => t,
+        _ => lua
+            .globals()
+            .get::<Table>("app")
+            .map_err(|_| anyhow!("Lua app must return a table with callbacks"))?,
+    };
+
+    let init_ctx = lua.create_table()?;
+    init_ctx.set("width", width)?;
+    init_ctx.set("height", height)?;
+    init_ctx.set("id", descriptor.manifest.application.id.clone())?;
+    init_ctx.set(
+        "name",
+        descriptor
+            .manifest
+            .application
+            .name
+            .clone()
+            .unwrap_or_else(|| descriptor.manifest.application.id.clone()),
+    )?;
+    init_ctx.set(
+        "version",
+        descriptor
+            .manifest
+            .application
+            .version
+            .clone()
+            .unwrap_or_else(|| "0.1.0".to_string()),
+    )?;
+    init_ctx.set(
+        "description",
+        descriptor
+            .manifest
+            .application
+            .description
+            .clone()
+            .unwrap_or_default(),
+    )?;
+    let lua_args = lua.create_table()?;
+    for (idx, arg) in args.iter().enumerate() {
+        lua_args.set(idx + 1, arg.clone())?;
+    }
+    init_ctx.set("args", lua_args)?;
+
+    call_table_function_if_exists(&app_table, "init", init_ctx)?;
+
+    Ok(app_table)
 }
 
 // With real key-up events, the terminal owns the held state. Only legacy
@@ -996,12 +1018,11 @@ fn install_lua_app_modules(
 
     // Shell facade for terminal apps. Useful for Git-oriented tools.
     let shell_default_cwd = launch_cwd.clone();
-    let shell_mod =
-        lua.create_function(move |lua, ()| {
-            let t = lua.create_table()?;
+    let shell_mod = lua.create_function(move |lua, ()| {
+        let t = lua.create_table()?;
 
-            let run_default_cwd = shell_default_cwd.clone();
-            t.set(
+        let run_default_cwd = shell_default_cwd.clone();
+        t.set(
             "run",
             lua.create_function(
                 move |lua, (program, args_tbl, cwd): (String, Option<Table>, Option<String>)| {
@@ -1012,41 +1033,57 @@ fn install_lua_app_modules(
                         }
                     }
 
-                    let mut cmd = Command::new(&program);
-                    cmd.args(&args);
-                    cmd.stdin(Stdio::null());
-                    cmd.env("GIT_TERMINAL_PROMPT", "0");
-                    match cwd {
-                        Some(path) if !path.trim().is_empty() => {
-                            cmd.current_dir(path);
-                        }
-                        _ => {
-                            cmd.current_dir(&run_default_cwd);
-                        }
+                    #[cfg(target_os = "emscripten")]
+                    {
+                        let _ = (lua, program, args, cwd, &run_default_cwd);
+                        Err::<Table, _>(mlua::Error::external(
+                            "kkc-shell.run is unavailable in the browser",
+                        ))
                     }
+                    #[cfg(not(target_os = "emscripten"))]
+                    {
+                        let mut cmd = Command::new(&program);
+                        cmd.args(&args);
+                        cmd.stdin(Stdio::null());
+                        cmd.env("GIT_TERMINAL_PROMPT", "0");
+                        match cwd {
+                            Some(path) if !path.trim().is_empty() => {
+                                cmd.current_dir(path);
+                            }
+                            _ => {
+                                cmd.current_dir(&run_default_cwd);
+                            }
+                        }
 
-                    let output = cmd.output().map_err(|e| {
-                        mlua::Error::external(anyhow!("Running '{}': {}", program, e))
-                    })?;
+                        let output = cmd.output().map_err(|e| {
+                            mlua::Error::external(anyhow!("Running '{}': {}", program, e))
+                        })?;
 
-                    let result = lua.create_table()?;
-                    result.set("ok", output.status.success())?;
-                    result.set("code", output.status.code().unwrap_or(-1))?;
-                    result.set("stdout", String::from_utf8_lossy(&output.stdout).into_owned())?;
-                    result.set("stderr", String::from_utf8_lossy(&output.stderr).into_owned())?;
-                    Ok(result)
+                        let result = lua.create_table()?;
+                        result.set("ok", output.status.success())?;
+                        result.set("code", output.status.code().unwrap_or(-1))?;
+                        result.set(
+                            "stdout",
+                            String::from_utf8_lossy(&output.stdout).into_owned(),
+                        )?;
+                        result.set(
+                            "stderr",
+                            String::from_utf8_lossy(&output.stderr).into_owned(),
+                        )?;
+                        Ok(result)
+                    }
                 },
             )?,
         )?;
 
-            let cwd_value = shell_default_cwd.to_string_lossy().into_owned();
-            t.set(
-                "cwd",
-                lua.create_function(move |_, ()| Ok(cwd_value.clone()))?,
-            )?;
+        let cwd_value = shell_default_cwd.to_string_lossy().into_owned();
+        t.set(
+            "cwd",
+            lua.create_function(move |_, ()| Ok(cwd_value.clone()))?,
+        )?;
 
-            Ok(t)
-        })?;
+        Ok(t)
+    })?;
     preload.set("kkc-shell", shell_mod)?;
     crate::lua_dialog::install_lua_dialog_module(lua, &preload)?;
 
@@ -1056,6 +1093,11 @@ fn install_lua_app_modules(
         t.set(
             "beep",
             lua.create_function(move |_, ()| {
+                #[cfg(target_os = "emscripten")]
+                {
+                    crate::audio::beep();
+                }
+                #[cfg(not(target_os = "emscripten"))]
                 print!("\x07");
                 io::stdout()
                     .flush()
@@ -1137,10 +1179,12 @@ fn lua_shortcut_items(app_table: &Table) -> Result<Vec<ShortcutBarItem>> {
     Ok(out)
 }
 
+#[cfg(not(target_os = "emscripten"))]
 fn is_quit_key(key: &KeyEvent) -> bool {
     key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL)
 }
 
+#[cfg(not(target_os = "emscripten"))]
 fn key_name(key: &KeyEvent) -> Option<String> {
     match key.code {
         KeyCode::Up => Some("up".to_string()),
@@ -1164,6 +1208,7 @@ fn key_name(key: &KeyEvent) -> Option<String> {
     }
 }
 
+#[cfg(not(target_os = "emscripten"))]
 fn dispatch_mouse_event(app_table: &Table, mouse: MouseEvent) -> Result<()> {
     let x = mouse.column as i64 + 1;
     let y = mouse.row as i64 + 1;
@@ -1199,6 +1244,7 @@ fn dispatch_mouse_event(app_table: &Table, mouse: MouseEvent) -> Result<()> {
     Ok(())
 }
 
+#[cfg(not(target_os = "emscripten"))]
 fn mouse_button_name(button: MouseButton) -> &'static str {
     match button {
         MouseButton::Left => "left",
@@ -1208,6 +1254,7 @@ fn mouse_button_name(button: MouseButton) -> &'static str {
 }
 
 /// Standalone host settings. Headless mode runs deterministic 80×24 frames.
+#[cfg(not(target_os = "emscripten"))]
 #[derive(Debug, Default)]
 pub struct RunOptions {
     pub windowed: bool,
@@ -1257,6 +1304,7 @@ fn descriptor(path: &Path) -> Result<(LuaAppDescriptor, PathBuf)> {
 }
 
 /// Validate the descriptor and entry script syntax without executing Lua code.
+#[cfg(not(target_os = "emscripten"))]
 pub fn check(path: &Path) -> Result<()> {
     let (_, script) = descriptor(path)?;
     Lua::new()
@@ -1267,6 +1315,7 @@ pub fn check(path: &Path) -> Result<()> {
 }
 
 /// Run a Kapsule directory or apps.toml. Arguments are passed unchanged to Lua.
+#[cfg(not(target_os = "emscripten"))]
 pub fn run(path: &Path, args: &[String], cwd: Option<&Path>, options: &RunOptions) -> Result<()> {
     let (descriptor, script) = descriptor(path)?;
     run_lua_app(&descriptor, &script, args, cwd, options)
@@ -1317,4 +1366,12 @@ mod tests {
         buffer.text(i64::MAX, 1, "outside");
         assert!(buffer.cells.iter().all(|&c| c == '#'));
     }
+}
+
+#[cfg(target_os = "emscripten")]
+#[path = "web.rs"]
+mod web;
+#[cfg(target_os = "emscripten")]
+pub fn web_main() {
+    web::initialize();
 }

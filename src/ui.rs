@@ -1,3 +1,4 @@
+#[cfg(not(target_os = "emscripten"))]
 use ratatui::{
     Frame,
     layout::Rect,
@@ -9,6 +10,7 @@ pub struct ShortcutBarItem {
     pub key: String,
     pub label: String,
 }
+#[cfg(not(target_os = "emscripten"))]
 pub fn render_shortcut_bar(frame: &mut Frame, area: Rect, items: &[ShortcutBarItem]) {
     let mut spans = Vec::new();
     for item in items {

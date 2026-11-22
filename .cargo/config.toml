@@ -1,0 +1,18 @@
+[target.wasm32-unknown-emscripten]
+rustflags = [
+  "-C", "panic=abort",
+  "-C", "link-arg=-sALLOW_MEMORY_GROWTH=1",
+  "-C", "link-arg=-sMAXIMUM_MEMORY=536870912",
+  "-C", "link-arg=-sDYNAMIC_EXECUTION=0",
+  "-C", "link-arg=-sSTACK_SIZE=2097152",
+  "-C", "link-arg=-sFORCE_FILESYSTEM=1",
+  "-C", "link-arg=-sMODULARIZE=1",
+  "-C", "link-arg=-sEXPORT_ES6=1",
+  "-C", "link-arg=-sEXPORT_NAME=createKapsule",
+  "-C", "link-arg=-sEXPORTED_FUNCTIONS=_main,_kapsule_call",
+  "-C", "link-arg=-sEXPORTED_RUNTIME_METHODS=ccall,FS",
+  "-C", "link-arg=-sENVIRONMENT=web,worker,node",
+]
+
+[env]
+CXXFLAGS_wasm32_unknown_emscripten = "-fwasm-exceptions"

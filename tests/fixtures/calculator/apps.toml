@@ -1,0 +1,22 @@
+[application]
+id = "calculator"
+name = "Calculator"
+version = "0.1.0"
+description = "Simple terminal calculator"
+category = "utility"
+
+[runtime]
+main = "app.lua"
+fps = 20
+width = 37
+height = 24
+
+[[install]]
+os = ["macos", "linux", "windows"]
+method = "manual"
+url = "https://github.com/redbug26/kkc-store/tree/main/applications/calculator"
+command = "Copy the complete calculator directory into the KKC data applications directory as calculator, then launch it using the association command kkc-lua-app:calculator %f. Requires KKC with Kapsule support."
+
+[extra]
+homepage = "https://github.com/redbug26/kkc-store/tree/main/applications/calculator"
+notes = "KKC Kapsule (Lua application). Metadata and runtime settings are stored in apps.toml; keep this descriptor and all Lua files together."

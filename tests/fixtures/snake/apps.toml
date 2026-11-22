@@ -1,0 +1,21 @@
+[application]
+id = "snake"
+name = "Snake"
+version = "1.0.0"
+description = "Classic Nokia-style Snake game"
+category = "other"
+
+[runtime]
+fps = 10
+width = 52
+height = 24
+
+[[install]]
+os = ["macos", "linux", "windows"]
+method = "manual"
+url = "https://github.com/redbug26/kkc-store/tree/main/applications/snake"
+command = "Copy the complete snake directory into the KKC data applications directory as snake, then launch it using the association command kkc-lua-app:snake %f. Requires KKC with Kapsule support."
+
+[extra]
+homepage = "https://github.com/redbug26/kkc-store/tree/main/applications/snake"
+notes = "KKC Kapsule (Lua application). Metadata and runtime settings are stored in apps.toml; keep this descriptor and all Lua files together."

@@ -1,0 +1,19 @@
+[package]
+name = "kapsule"
+version = "0.1.0"
+edition = "2024"
+description = "Standalone reference runtime for Kapsule Lua applications"
+authors = ["RedBug26"]
+repository = "https://github.com/redbug26/kapsule-rust"
+
+[dependencies]
+anyhow = "1"
+crossterm = "0.29"
+ratatui = "0.30"
+mlua = { version = "0.11", default-features = false, features = ["lua54", "vendored", "error-send"] }
+serde = { version = "1", features = ["derive"] }
+toml = { version = "1", default-features = false, features = ["parse", "serde"] }
+rodio = { version = "0.22", default-features = false, features = ["playback", "symphonia-all"] }
+
+[dev-dependencies]
+tempfile = "3"

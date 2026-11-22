@@ -1,0 +1,10 @@
+[application]
+id = "hello"
+name = "Hello Kapsule"
+version = "0.1.0"
+
+[runtime]
+main = "app.lua"
+fps = 30
+width = 60
+height = 18
